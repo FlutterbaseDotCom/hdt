@@ -36,6 +36,7 @@ from transformers.utils import (
     replace_return_docstrings,
 )
 from dt.configuration_decision_transformer import DecisionTransformerConfig
+from extract_cnn import get_cnn_feature_extractor
 
 
 logger = logging.get_logger(__name__)
@@ -799,16 +800,15 @@ class DecisionTransformerModel(DecisionTransformerPreTrainedModel):
 
         self.embed_timestep = nn.Embedding(config.max_ep_len, config.hidden_size)
         self.embed_return = torch.nn.Linear(1, config.hidden_size)
-        self.embed_state = torch.nn.Linear(config.state_dim, config.hidden_size)
-        self.embed_action = torch.nn.Linear(config.act_dim, config.hidden_size)
+        self.cnn_state_feature_extractor = get_cnn_feature_extractor()
+        self.embed_state = torch.nn.Linear(512, config.hidden_size)
+        self.embed_action = nn.Embedding(config.action_num, config.hidden_size) 
 
         self.embed_ln = nn.LayerNorm(config.hidden_size)
 
         # note: we don't predict states or returns for the paper
         self.predict_state = torch.nn.Linear(config.hidden_size, config.state_dim)
-        self.predict_action = nn.Sequential(
-            *([nn.Linear(config.hidden_size, config.act_dim)] + ([nn.Tanh()] if config.action_tanh else []))
-        )
+        self.predict_action = torch.nn.Linear(config.hidden_size, config.action_num) #= nn.Sequential(            *([ linear was here!!!] + ([nn.Tanh()] if config.action_tanh else []))        )
         self.predict_return = torch.nn.Linear(config.hidden_size, 1)
 
         # Initialize weights and apply final processing
@@ -819,7 +819,7 @@ class DecisionTransformerModel(DecisionTransformerPreTrainedModel):
     def forward(
         self,
         states: Optional[torch.FloatTensor] = None,
-        actions: Optional[torch.FloatTensor] = None,
+        actions: Optional[torch.LongTensor] = None,
         rewards: Optional[torch.FloatTensor] = None,
         returns_to_go: Optional[torch.FloatTensor] = None,
         timesteps: Optional[torch.LongTensor] = None,
@@ -880,8 +880,11 @@ class DecisionTransformerModel(DecisionTransformerPreTrainedModel):
             attention_mask = torch.ones((batch_size, seq_length), dtype=torch.long)
 
         # embed each modality with a different head
-        state_embeddings = self.embed_state(states)
-        action_embeddings = self.embed_action(actions)
+        states = states.view(-1, 3, 96, 96)
+        state_features = self.cnn_state_feature_extractor( states )
+        state_features = state_features.view(batch_size, seq_length, -1)
+        state_embeddings = self.embed_state(  state_features   )
+        action_embeddings = self.embed_action(actions.view(batch_size, seq_length))
         returns_embeddings = self.embed_return(returns_to_go)
         time_embeddings = self.embed_timestep(timesteps)
 

@@ -132,8 +132,10 @@ class DecisionTransformerConfig(PretrainedConfig):
         eos_token_id=50256,
         scale_attn_by_inverse_layer_idx=False,
         reorder_and_upcast_attn=False,
+        action_num = 5,
         **kwargs,
     ):
+        self.action_num = action_num
         self.state_dim = state_dim
         self.act_dim = act_dim
         self.hidden_size = hidden_size

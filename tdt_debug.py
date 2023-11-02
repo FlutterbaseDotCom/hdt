@@ -8,12 +8,13 @@ from datasets import load_dataset
 from transformers import Trainer, TrainingArguments
 from dt.configuration_decision_transformer import DecisionTransformerConfig
 from dt.modeling_decision_transformer import DecisionTransformerModel
+import torch.nn.functional as F
 
 os.environ["WANDB_DISABLED"] = "true" # we diable weights and biases logging for this tutorial
-dataset = load_dataset("edbeeching/decision_transformer_gym_replay", "halfcheetah-expert-v2")
+dataset_half = load_dataset("edbeeching/decision_transformer_gym_replay", "halfcheetah-expert-v2")
 
-len(dataset['train'])
-dataset['train'][0].keys()
+len(dataset_half['train'])
+dataset_half['train'][0].keys()
 
 @dataclass
 class DecisionTransformerGymDataCollator:
@@ -29,7 +30,7 @@ class DecisionTransformerGymDataCollator:
     n_traj: int = 0 # to store the number of trajectories in the dataset
 
     def __init__(self, dataset) -> None:
-        self.act_dim = len(dataset[0]["actions"][0])
+        self.act_dim = 1# len(dataset[0]["actions"][0])
         self.state_dim = len(dataset[0]["observations"][0])
         self.dataset = dataset
         # calculate dataset stats for normalization of states
@@ -90,7 +91,8 @@ class DecisionTransformerGymDataCollator:
             # padding and state + reward normalization
             tlen = s[-1].shape[1]
             s[-1] = np.concatenate([np.zeros((1, self.max_len - tlen, self.state_dim)), s[-1]], axis=1)
-            s[-1] = (s[-1] - self.state_mean) / self.state_std
+            #yakiv. no normalisation here
+          #  s[-1] = (s[-1] - self.state_mean) / self.state_std
             a[-1] = np.concatenate(
                 [np.ones((1, self.max_len - tlen, self.act_dim)) * -10.0, a[-1]],
                 axis=1,
@@ -102,7 +104,7 @@ class DecisionTransformerGymDataCollator:
             mask.append(np.concatenate([np.zeros((1, self.max_len - tlen)), np.ones((1, tlen))], axis=1))
 
         s = torch.from_numpy(np.concatenate(s, axis=0)).float()
-        a = torch.from_numpy(np.concatenate(a, axis=0)).float()
+        a = torch.from_numpy(np.concatenate(a, axis=0)).long()
         r = torch.from_numpy(np.concatenate(r, axis=0)).float()
         d = torch.from_numpy(np.concatenate(d, axis=0))
         rtg = torch.from_numpy(np.concatenate(rtg, axis=0)).float()
@@ -124,15 +126,36 @@ class TrainableDT(DecisionTransformerModel):
 
     def forward(self, **kwargs):
         output = super().forward(**kwargs)
-        # add the DT loss
+
+
+        # Assuming output[1] contains the raw logits for the actions
         action_preds = output[1]
         action_targets = kwargs["actions"]
         attention_mask = kwargs["attention_mask"]
-        act_dim = action_preds.shape[2]
-        action_preds = action_preds.reshape(-1, act_dim)[attention_mask.reshape(-1) > 0]
-        action_targets = action_targets.reshape(-1, act_dim)[attention_mask.reshape(-1) > 0]
 
-        loss = torch.mean((action_preds - action_targets) ** 2)
+        attention_mask = (attention_mask.reshape(-1) > 0)
+
+        # We expect action_preds to be a 3D tensor: [batch_size, sequence_length, num_actions]
+        # After masking, we need action_preds to be 2D: [num_valid_entries, num_actions]
+        action_preds = action_preds.reshape(-1, action_preds.size(-1))
+        masked_action_preds = torch.masked_select(action_preds, attention_mask.unsqueeze(-1)).view(-1, action_preds.size(-1))
+
+        # After masking, we need action_targets to be 1D: [num_valid_entries]
+        action_targets = action_targets.reshape(-1)
+        masked_action_targets = torch.masked_select(action_targets, attention_mask)
+
+        loss = F.cross_entropy(masked_action_preds, masked_action_targets)
+
+
+        # # add the DT loss
+        # action_preds = output[1]
+        # action_targets = kwargs["actions"]
+        # attention_mask = kwargs["attention_mask"]
+        # act_dim = action_preds.shape[2]
+        # action_preds = action_preds.reshape(-1, act_dim)[attention_mask.reshape(-1) > 0]
+        # action_targets = action_targets.reshape(-1, act_dim)[attention_mask.reshape(-1) > 0]
+
+        # loss = torch.mean((action_preds - action_targets) ** 2)
 
         return {"loss": loss}
 
@@ -141,32 +164,32 @@ class TrainableDT(DecisionTransformerModel):
 
 
 
-collator = DecisionTransformerGymDataCollator(dataset["train"])
+# collator = DecisionTransformerGymDataCollator(dataset_half["train"])
 
-config = DecisionTransformerConfig(state_dim=collator.state_dim, act_dim=collator.act_dim)
-model = TrainableDT(config)
+# config = DecisionTransformerConfig(state_dim=collator.state_dim, act_dim=collator.act_dim)
+# model = TrainableDT(config)
 
 
-training_args = TrainingArguments(
-    output_dir="output/",
-    remove_unused_columns=False,
-    num_train_epochs=120,
-    per_device_train_batch_size=64,
-    learning_rate=1e-4,
-    weight_decay=1e-4,
-    warmup_ratio=0.1,
-    optim="adamw_torch",
-    max_grad_norm=0.25,
-)
+# training_args = TrainingArguments(
+#     output_dir="output/",
+#     remove_unused_columns=False,
+#     num_train_epochs=120,
+#     per_device_train_batch_size=64,
+#     learning_rate=1e-4,
+#     weight_decay=1e-4,
+#     warmup_ratio=0.1,
+#     optim="adamw_torch",
+#     max_grad_norm=0.25,
+# )
 
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=dataset["train"],
-    data_collator=collator,
-)
+# trainer = Trainer(
+#     model=model,
+#     args=training_args,
+#     train_dataset=dataset_half["train"],
+#     data_collator=collator,
+# )
 
-trainer.train()
+# trainer.train()
 
 # import gymnasyium as gym
 
