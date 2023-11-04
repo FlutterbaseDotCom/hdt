@@ -34,7 +34,7 @@ from transformers import Trainer, TrainingArguments
 from dt.configuration_decision_transformer import DecisionTransformerConfig
 from dt.modeling_decision_transformer import DecisionTransformerModel
 from extract_cnn import prepare_observation_array
-from tdt_debug import DecisionTransformerGymDataCollator, TrainableDT
+from trainable_dt import DecisionTransformerGymDataCollator, TrainableDT
 
 os.environ["WANDB_DISABLED"] = "true" # we diable weights and biases logging for this tutorial
 
@@ -48,7 +48,7 @@ tmp_model_path ='./models/dql_pretrained/dql_rl_11.zip'
 loaded_model = model.load(tmp_model_path)
 
 
-NUM_EPISODES = 2
+NUM_EPISODES = 100
 features = {
     "observations": [],
     "actions": [],
@@ -56,16 +56,14 @@ features = {
     "dones": [],
 }
 for episode in range(NUM_EPISODES):
-    print(f"********* Episode {episode} of {NUM_EPISODES} ************")
-    obs = env.reset()
-    if len(obs) == 2:
-        obs = obs[0]
+    print(f"Episode: {episode} of {NUM_EPISODES}:" )
+    [obs, _] = env.reset()
     done = False
 
     o, a, r, d = [], [], [], []
     total_reward = 0
     sti = 0
-    tmp_max_sti = 60 + random.randint(0, 50)
+    tmp_max_sti = 1000
     while not done:
         sti = sti + 1
         if sti > tmp_max_sti:
@@ -83,7 +81,7 @@ for episode in range(NUM_EPISODES):
         r.append(reward)
         d.append(done)
         obs = new_obs
-        print(f"Step {sti} Total: {total_reward} Step: {reward} Done: {done} ")
+        print(".", end="")
 
         # check if last 50 steps does not contain a single positive reward
         if len(r) > 100 and max(r[-50:]) <= 0:
@@ -94,6 +92,7 @@ for episode in range(NUM_EPISODES):
             d[-1] = True
             print('stopping die to the last 50 steps not negative rewards')
             break
+    print(f"Total reward: {total_reward}")
     features["observations"].append(o)
     features["actions"].append(a)
     features["rewards"].append(r)
@@ -102,37 +101,38 @@ for episode in range(NUM_EPISODES):
 env.close()
 print(len(features["actions"]))
 
-
 dataset = Dataset.from_dict(features)
+dataset.save_to_disk('datasets/car_racing_sm/')
+
 #dataset = dataset.train_test_split(test_size=0.1)
-dataset = {
-    "train": dataset
-}
+# dataset = {
+#     "train": dataset
+# }
 
 
-collator = DecisionTransformerGymDataCollator(dataset["train"])
+# collator = DecisionTransformerGymDataCollator(dataset["train"])
 
-config = DecisionTransformerConfig(state_dim=collator.state_dim, act_dim=collator.act_dim)
-model = TrainableDT(config)
+# config = DecisionTransformerConfig(state_dim=collator.state_dim, act_dim=collator.act_dim)
+# model = TrainableDT(config)
 
 
-training_args = TrainingArguments(
-    output_dir="output/",
-    remove_unused_columns=False,
-    num_train_epochs=120,
-    per_device_train_batch_size=64,
-    learning_rate=1e-4,
-    weight_decay=1e-4,
-    warmup_ratio=0.1,
-    optim="adamw_torch",
-    max_grad_norm=0.25,
-)
+# training_args = TrainingArguments(
+#     output_dir="output/",
+#     remove_unused_columns=False,
+#     num_train_epochs=120,
+#     per_device_train_batch_size=64,
+#     learning_rate=1e-4,
+#     weight_decay=1e-4,
+#     warmup_ratio=0.1,
+#     optim="adamw_torch",
+#     max_grad_norm=0.25,
+# )
 
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=dataset["train"],
-    data_collator=collator,
-)
+# trainer = Trainer(
+#     model=model,
+#     args=training_args,
+#     train_dataset=dataset["train"],
+#     data_collator=collator,
+# )
 
-trainer.train()
+# trainer.train()
