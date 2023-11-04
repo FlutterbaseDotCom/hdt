@@ -14,9 +14,9 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecTransposeImage
 
 
 
-model = DQN
-tmp_model_path ='./models/dql_pretrained/dql_rl_11.zip'
-loaded_model = model.load(tmp_model_path)
+#model = DQN
+#tmp_model_path ='./models/dql_pretrained/dql_rl_11.zip'
+#loaded_model = model.load(tmp_model_path)
 
 
 
