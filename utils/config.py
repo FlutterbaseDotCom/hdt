@@ -1,5 +1,18 @@
+from dataclasses import dataclass
 import torch
 import toml
+
+
+#WANDB CONFIG
+LOAD_SAVED_MODEL    = False
+RUN_NUM = 20
+WANDB_ID            = "dt_"+str(RUN_NUM)
+WNDB_NAME           = "DT_"+str(RUN_NUM)
+MODEL_SAVE_NAME     = WNDB_NAME
+SAVED_MODEL_VERSION = "latest"
+
+
+
 # Define the global device variable
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -22,6 +35,6 @@ max_grad_norm       = 0.25
 max_length = 20
 max_ep_len = 1000
 """
-config_toml = toml.loads(config_toml)
+CONFIG = toml.loads(config_toml)
 
 
