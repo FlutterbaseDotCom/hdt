@@ -10,6 +10,8 @@ from dt.configuration_decision_transformer import DecisionTransformerConfig
 from dt.modeling_decision_transformer import DecisionTransformerModel
 import torch.nn.functional as F
 
+from utils.config import ACTION_PAD_TOKEN_ID
+
 
 @dataclass
 class DecisionTransformerGymDataCollator:
@@ -24,7 +26,10 @@ class DecisionTransformerGymDataCollator:
     p_sample: np.array = None  # a distribution to take account trajectory lengths
     n_traj: int = 0 # to store the number of trajectories in the dataset
 
-    def __init__(self, dataset) -> None:
+
+    def __init__(self, dataset, max_ep_len = 1000, max_len = 20  ) -> None:
+        self.max_ep_len = max_ep_len
+        self.max_len = max_len
         self.act_dim = 1# len(dataset[0]["actions"][0])
         self.state_dim = len(dataset[0]["observations"][0])
         self.dataset = dataset
@@ -89,7 +94,7 @@ class DecisionTransformerGymDataCollator:
             #yakiv. no normalisation here
           #  s[-1] = (s[-1] - self.state_mean) / self.state_std
             a[-1] = np.concatenate(
-                [np.ones((1, self.max_len - tlen, self.act_dim)) * -10.0, a[-1]],
+                [np.ones((1, self.max_len - tlen, self.act_dim)) * ACTION_PAD_TOKEN_ID, a[-1]],
                 axis=1,
             )
             r[-1] = np.concatenate([np.zeros((1, self.max_len - tlen, 1)), r[-1]], axis=1)

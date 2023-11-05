@@ -924,6 +924,7 @@ class DecisionTransformerModel(DecisionTransformerPreTrainedModel):
         return_preds = self.predict_return(x[:, 2])  # predict next return given state and action
         state_preds = self.predict_state(x[:, 2])  # predict next state given state and action
         action_preds = self.predict_action(x[:, 1])  # predict next action given state
+        action_preds[..., -1] = float('-inf') # mask out the PAD token
         if not return_dict:
             return (state_preds, action_preds, return_preds)
 

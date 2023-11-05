@@ -17,6 +17,8 @@
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import logging
 
+from utils.config import ACTION_VOCAB_SIZE
+
 
 logger = logging.get_logger(__name__)
 
@@ -132,7 +134,7 @@ class DecisionTransformerConfig(PretrainedConfig):
         eos_token_id=50256,
         scale_attn_by_inverse_layer_idx=False,
         reorder_and_upcast_attn=False,
-        action_num = 5,
+        action_num = ACTION_VOCAB_SIZE, # 5 actions + 1 padding
         **kwargs,
     ):
         self.action_num = action_num
