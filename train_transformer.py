@@ -35,7 +35,7 @@ from transformers import Trainer, TrainingArguments
 from dt.configuration_decision_transformer import DecisionTransformerConfig
 from dt.modeling_decision_transformer import DecisionTransformerModel
 from extract_cnn import prepare_observation_array
-from trainable_dt import DecisionTransformerGymDataCollator, TrainableDT
+from dt.trainable_dt import DecisionTransformerGymDataCollator, TrainableDT
 import toml
 from colabgymrender.recorder import Recorder
 

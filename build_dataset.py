@@ -34,7 +34,7 @@ from transformers import Trainer, TrainingArguments
 from dt.configuration_decision_transformer import DecisionTransformerConfig
 from dt.modeling_decision_transformer import DecisionTransformerModel
 from extract_cnn import prepare_observation_array
-from trainable_dt import DecisionTransformerGymDataCollator, TrainableDT
+from dt.trainable_dt import DecisionTransformerGymDataCollator, TrainableDT
 
 os.environ["WANDB_DISABLED"] = "true" # we diable weights and biases logging for this tutorial
 

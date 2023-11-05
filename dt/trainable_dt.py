@@ -10,8 +10,6 @@ from dt.configuration_decision_transformer import DecisionTransformerConfig
 from dt.modeling_decision_transformer import DecisionTransformerModel
 import torch.nn.functional as F
 
-os.environ["WANDB_DISABLED"] = "true" # we diable weights and biases logging for this tutorial
-
 
 @dataclass
 class DecisionTransformerGymDataCollator:
