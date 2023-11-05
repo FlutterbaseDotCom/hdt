@@ -41,13 +41,9 @@ from extract_cnn import get_cnn_feature_extractor
 
 logger = logging.get_logger(__name__)
 
-_CHECKPOINT_FOR_DOC = "edbeeching/decision-transformer-gym-hopper-medium"
+
 _CONFIG_FOR_DOC = "DecisionTransformerConfig"
 
-DECISION_TRANSFORMER_PRETRAINED_MODEL_ARCHIVE_LIST = [
-    "edbeeching/decision-transformer-gym-hopper-medium",
-    # See all DecisionTransformer models at https://huggingface.co/models?filter=decision_transformer
-]
 
 
 # Copied from transformers.models.gpt2.modeling_gpt2.load_tf_weights_in_gpt2

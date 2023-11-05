@@ -11,10 +11,7 @@ from dt.modeling_decision_transformer import DecisionTransformerModel
 import torch.nn.functional as F
 
 os.environ["WANDB_DISABLED"] = "true" # we diable weights and biases logging for this tutorial
-dataset_half = load_dataset("edbeeching/decision_transformer_gym_replay", "halfcheetah-expert-v2")
 
-len(dataset_half['train'])
-dataset_half['train'][0].keys()
 
 @dataclass
 class DecisionTransformerGymDataCollator:
