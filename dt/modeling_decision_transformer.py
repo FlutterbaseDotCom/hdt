@@ -37,6 +37,7 @@ from transformers.utils import (
 )
 from dt.configuration_decision_transformer import DecisionTransformerConfig
 from extract_cnn import get_cnn_feature_extractor
+from utils.timing import execution_timing
 
 
 logger = logging.get_logger(__name__)
@@ -862,77 +863,77 @@ class DecisionTransformerModel(DecisionTransformerPreTrainedModel):
         ...         return_dict=False,
         ...     )
         ```"""
+        with execution_timing(f"DecisionTransformerModel.forward batch on device: { str(states.device)} sz:{states.shape[0]} seq len: {states.shape[1]} "):
+            output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+            output_hidden_states = (
+                output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+            )
+            return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
-        output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
-        )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+            batch_size, seq_length = states.shape[0], states.shape[1]
 
-        batch_size, seq_length = states.shape[0], states.shape[1]
+            if attention_mask is None:
+                # attention mask for GPT: 1 if can be attended to, 0 if not
+                attention_mask = torch.ones((batch_size, seq_length), dtype=torch.long)
 
-        if attention_mask is None:
-            # attention mask for GPT: 1 if can be attended to, 0 if not
-            attention_mask = torch.ones((batch_size, seq_length), dtype=torch.long)
+            # embed each modality with a different head
+            states = states.view(-1, 3, 96, 96)
+            state_features = self.cnn_state_feature_extractor( states )
+            state_features = state_features.view(batch_size, seq_length, -1)
+            state_embeddings = self.embed_state(  state_features   )
+            action_embeddings = self.embed_action(actions.view(batch_size, seq_length))
+            returns_embeddings = self.embed_return(returns_to_go)
+            time_embeddings = self.embed_timestep(timesteps)
 
-        # embed each modality with a different head
-        states = states.view(-1, 3, 96, 96)
-        state_features = self.cnn_state_feature_extractor( states )
-        state_features = state_features.view(batch_size, seq_length, -1)
-        state_embeddings = self.embed_state(  state_features   )
-        action_embeddings = self.embed_action(actions.view(batch_size, seq_length))
-        returns_embeddings = self.embed_return(returns_to_go)
-        time_embeddings = self.embed_timestep(timesteps)
+            # time embeddings are treated similar to positional embeddings
+            state_embeddings = state_embeddings + time_embeddings
+            action_embeddings = action_embeddings + time_embeddings
+            returns_embeddings = returns_embeddings + time_embeddings
 
-        # time embeddings are treated similar to positional embeddings
-        state_embeddings = state_embeddings + time_embeddings
-        action_embeddings = action_embeddings + time_embeddings
-        returns_embeddings = returns_embeddings + time_embeddings
+            # this makes the sequence look like (R_1, s_1, a_1, R_2, s_2, a_2, ...)
+            # which works nice in an autoregressive sense since states predict actions
+            stacked_inputs = (
+                torch.stack((returns_embeddings, state_embeddings, action_embeddings), dim=1)
+                .permute(0, 2, 1, 3)
+                .reshape(batch_size, 3 * seq_length, self.hidden_size)
+            )
+            stacked_inputs = self.embed_ln(stacked_inputs)
 
-        # this makes the sequence look like (R_1, s_1, a_1, R_2, s_2, a_2, ...)
-        # which works nice in an autoregressive sense since states predict actions
-        stacked_inputs = (
-            torch.stack((returns_embeddings, state_embeddings, action_embeddings), dim=1)
-            .permute(0, 2, 1, 3)
-            .reshape(batch_size, 3 * seq_length, self.hidden_size)
-        )
-        stacked_inputs = self.embed_ln(stacked_inputs)
+            # to make the attention mask fit the stacked inputs, have to stack it as well
+            stacked_attention_mask = (
+                torch.stack((attention_mask, attention_mask, attention_mask), dim=1)
+                .permute(0, 2, 1)
+                .reshape(batch_size, 3 * seq_length)
+            )
+            device = stacked_inputs.device
+            # we feed in the input embeddings (not word indices as in NLP) to the model
+            encoder_outputs = self.encoder(
+                inputs_embeds=stacked_inputs,
+                attention_mask=stacked_attention_mask,
+                position_ids=torch.zeros(stacked_attention_mask.shape, device=device, dtype=torch.long),
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                return_dict=return_dict,
+            )
+            x = encoder_outputs[0]
 
-        # to make the attention mask fit the stacked inputs, have to stack it as well
-        stacked_attention_mask = (
-            torch.stack((attention_mask, attention_mask, attention_mask), dim=1)
-            .permute(0, 2, 1)
-            .reshape(batch_size, 3 * seq_length)
-        )
-        device = stacked_inputs.device
-        # we feed in the input embeddings (not word indices as in NLP) to the model
-        encoder_outputs = self.encoder(
-            inputs_embeds=stacked_inputs,
-            attention_mask=stacked_attention_mask,
-            position_ids=torch.zeros(stacked_attention_mask.shape, device=device, dtype=torch.long),
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-        x = encoder_outputs[0]
+            # reshape x so that the second dimension corresponds to the original
+            # returns (0), states (1), or actions (2); i.e. x[:,1,t] is the token for s_t
+            x = x.reshape(batch_size, seq_length, 3, self.hidden_size).permute(0, 2, 1, 3)
 
-        # reshape x so that the second dimension corresponds to the original
-        # returns (0), states (1), or actions (2); i.e. x[:,1,t] is the token for s_t
-        x = x.reshape(batch_size, seq_length, 3, self.hidden_size).permute(0, 2, 1, 3)
+            # get predictions
+            return_preds = self.predict_return(x[:, 2])  # predict next return given state and action
+            state_preds = self.predict_state(x[:, 2])  # predict next state given state and action
+            action_preds = self.predict_action(x[:, 1])  # predict next action given state
+            action_preds[..., -1] = float('-inf') # mask out the PAD token
+            if not return_dict:
+                return (state_preds, action_preds, return_preds)
 
-        # get predictions
-        return_preds = self.predict_return(x[:, 2])  # predict next return given state and action
-        state_preds = self.predict_state(x[:, 2])  # predict next state given state and action
-        action_preds = self.predict_action(x[:, 1])  # predict next action given state
-        action_preds[..., -1] = float('-inf') # mask out the PAD token
-        if not return_dict:
-            return (state_preds, action_preds, return_preds)
-
-        return DecisionTransformerOutput(
-            last_hidden_state=encoder_outputs.last_hidden_state,
-            state_preds=state_preds,
-            action_preds=action_preds,
-            return_preds=return_preds,
-            hidden_states=encoder_outputs.hidden_states,
-            attentions=encoder_outputs.attentions,
-        )
+            return DecisionTransformerOutput(
+                last_hidden_state=encoder_outputs.last_hidden_state,
+                state_preds=state_preds,
+                action_preds=action_preds,
+                return_preds=return_preds,
+                hidden_states=encoder_outputs.hidden_states,
+                attentions=encoder_outputs.attentions,
+            )
