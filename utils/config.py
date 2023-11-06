@@ -7,7 +7,7 @@ import toml
 
 #WANDB CONFIG
 LOAD_SAVED_MODEL    = False
-RUN_NUM = 20
+RUN_NUM = 21
 WANDB_ID            = "dt_"+str(RUN_NUM)
 WNDB_NAME           = "DT_"+str(RUN_NUM)
 MODEL_SAVE_NAME     = WNDB_NAME
@@ -20,8 +20,8 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # GENERATE DATA CONFIG
-NUM_EPISODES = 10
-MAX_EPISODE_STEPS = 45
+NUM_EPISODES = 100
+MAX_EPISODE_STEPS = 1000
 
 RTG_GAMMA = 1.0
 
@@ -29,14 +29,14 @@ RTG_GAMMA = 1.0
 ACTION_PAD_TOKEN_ID = 5 #yakiv.tbd tmp - move to config!!!
 ACTION_VOCAB_SIZE = 6 # 5 actions + 1 PAD token
 
-PER_DEVICE_BATCH_SIZE = 8
+PER_DEVICE_BATCH_SIZE = 32
 
 # TOML-formatted string
 config_toml = f"""
 PREFIX              = 'DT'
 LOG_INTERVAL        = 5
-save_steps          = 50
-num_train_epochs    = 1
+save_steps          = 30
+num_train_epochs    = 2
 per_device_train_batch_size={PER_DEVICE_BATCH_SIZE}
 learning_rate       = 0.0001
 weight_decay        = 0.0001
