@@ -2,9 +2,7 @@ from dataclasses import dataclass
 import torch
 import toml
 
-# GENERATE DATA CONFIG
-NUM_EPISODES = 70
-MAX_EPISODE_STEPS = 45
+
 
 
 #WANDB CONFIG
@@ -19,6 +17,13 @@ SAVED_MODEL_VERSION = "latest"
 
 # Define the global device variable
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+# GENERATE DATA CONFIG
+NUM_EPISODES = 10
+MAX_EPISODE_STEPS = 45
+
+RTG_GAMMA = 1.0
 
 
 ACTION_PAD_TOKEN_ID = 5 #yakiv.tbd tmp - move to config!!!
