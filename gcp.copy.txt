@@ -1,0 +1,6 @@
+
+#gcloud auth login
+!gcloud config set project clever-393810
+!gcloud auth list
+!gcloud storage buckets list
+!gsutil cp /content/f.hdf5 gs://yakiv-dt-public/datasets/ftest.hdf5
