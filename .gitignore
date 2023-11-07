@@ -1,4 +1,6 @@
 # Byte-compiled / optimized / DLL files
+downloaded_datasets/
+downloaded_models/
 datasets/
 temp_data/
 wandb/
