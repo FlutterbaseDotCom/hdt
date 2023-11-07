@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 datasets/
+temp_data/
 wandb/
 __pycache__/
 *.py[cod]
