@@ -16,11 +16,11 @@ from utils.timing import execution_timing
 
 @dataclass
 class DecisionTransformerGymDataCollator:
+    max_len: int #subsets of the episode we use for training
+    max_ep_len: int # max episode length in the dataset
     return_tensors: str = "pt"
-    max_len: int = 20 #subsets of the episode we use for training
     state_dim: int = 96*96*3  # size of state space
     act_dim: int = 1  # size of action space - one action at a time
-    max_ep_len: int = 1000 # max episode length in the dataset
     scale: float = 1000.0  # normalization of rewards/returns
     state_mean: np.array = None  # to store state means
     state_std: np.array = None  # to store state stds
