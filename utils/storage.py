@@ -4,7 +4,7 @@ import numpy as np
 import requests
 
 # Function to save data to HDF5
-def save_to_hdf5(data, filename, use_compression=False):
+def save_to_hdf5(data, filename, use_compression=True):
     with h5py.File(filename, 'w') as hdf5_file:
         for key, value in data.items():
             group = hdf5_file.create_group(key)
@@ -42,7 +42,7 @@ def download_file(url, destination):
 
 def get_pretrained_model(model, pretrained_model_name):
     model_dir = './downloaded_models'
-    model_path = os.path.join(model_dir, f'{pretrained_model_name}.bin')
+    model_path = os.path.join(model_dir, f'{pretrained_model_name}')
     
     if not os.path.isdir(model_dir):
         os.makedirs(model_dir)
@@ -55,3 +55,14 @@ def get_pretrained_model(model, pretrained_model_name):
     loaded_model = model.load(model_path)
     
     return loaded_model
+
+def load_dataset(dataset_name):
+    dataset_dir = './downloaded_datasets'
+    dataset_path = os.path.join(dataset_dir, f'{dataset_name}.hdf5')
+    dataset_url = f"https://storage.googleapis.com/yakiv-dt-public/datasets/{dataset_name}.hdf5"
+    if not os.path.isdir(dataset_dir):
+        os.makedirs(dataset_dir)
+    if not os.path.isfile(dataset_path):
+        download_file(dataset_url, dataset_path)
+
+    return load_from_hdf5(dataset_path)
