@@ -6,8 +6,8 @@ import numpy as np
 import torch
 from datasets import load_dataset
 from transformers import Trainer, TrainingArguments
-from dt.configuration_decision_transformer import DecisionTransformerConfig
-from dt.modeling_decision_transformer import DecisionTransformerModel
+from cnn_decision_transformer.configuration import DecisionTransformerConfig
+from cnn_decision_transformer.cnn_decision_transformer_model import DecisionTransformerModel
 
 
 import wandb
@@ -31,10 +31,10 @@ from datasets import load_dataset
 from datasets import load_from_disk
 from datasets import Dataset
 from transformers import Trainer, TrainingArguments
-from dt.configuration_decision_transformer import DecisionTransformerConfig
-from dt.modeling_decision_transformer import DecisionTransformerModel
-from extract_cnn import prepare_observation_array
-from dt.trainable_dt import DecisionTransformerGymDataCollator, TrainableDT
+from cnn_decision_transformer.configuration import DecisionTransformerConfig
+from cnn_decision_transformer.cnn_decision_transformer_model import DecisionTransformerModel
+from cnn_decision_transformer.cnn_feature_extractor import prepare_observation_array
+from cnn_decision_transformer.cnn_decision_transformer_trainable import DecisionTransformerGymDataCollator, TrainableDT
 import toml
 
 

@@ -39,8 +39,9 @@ def download_file(url, destination):
         print(f"The file {destination} already exists. Download skipped.")
 
 
-
-def get_pretrained_model(model, pretrained_model_name):
+# nature_cnn_dql_pretrained.pt
+# dql_car_racing.pt
+def get_downloaded_model_file(pretrained_model_name):
     model_dir = './downloaded_models'
     model_path = os.path.join(model_dir, f'{pretrained_model_name}')
     
@@ -50,10 +51,14 @@ def get_pretrained_model(model, pretrained_model_name):
     if not os.path.isfile(model_path):
         model_url = f"https://storage.googleapis.com/yakiv-dt-public/models/{pretrained_model_name}"
         download_file(model_url, model_path)
+    return model_path
+
+
+def get_pretrained_model(model, pretrained_model_name):
+    model_path = get_downloaded_model_file(pretrained_model_name)
     
     # Load the model from the path
     loaded_model = model.load(model_path)
-    
     return loaded_model
 
 def load_dataset(dataset_name):

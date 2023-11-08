@@ -1,13 +1,12 @@
 # Byte-compiled / optimized / DLL files
-downloaded_datasets/
-downloaded_models/
-datasets/
-temp_data/
-wandb/
+/downloaded_datasets/
+/downloaded_models/
+/tensorboard*/
+/wandb/
 __pycache__/
 *.py[cod]
 *$py.class
-output/
+/output/
 # C extensions
 *.so
 

@@ -83,8 +83,8 @@ use_return_dict ---> True
 vocab_size ---> 1
 
 
-from_dict ---> <bound method PretrainedConfig.from_dict of <class 'transformers.models.decision_transformer.configuration_decision_transformer.DecisionTransformerConfig'>>
-from_json_file ---> <bound method PretrainedConfig.from_json_file of <class 'transformers.models.decision_transformer.configuration_decision_transformer.DecisionTransformerConfig'>>
-from_pretrained ---> <bound method PretrainedConfig.from_pretrained of <class 'transformers.models.decision_transformer.configuration_decision_transformer.DecisionTransformerConfig'>>
-get_config_dict ---> <bound method PretrainedConfig.get_config_dict of <class 'transformers.models.decision_transformer.configuration_decision_transformer.DecisionTransformerConfig'>>
-register_for_auto_class ---> <bound method PretrainedConfig.register_for_auto_class of <class 'transformers.models.decision_transformer.configuration_decision_transformer.DecisionTransformerConfig'>>
+from_dict ---> <bound method PretrainedConfig.from_dict of <class 'transformers.models.cnn_decision_transformer.configuration_decision_transformer.DecisionTransformerConfig'>>
+from_json_file ---> <bound method PretrainedConfig.from_json_file of <class 'transformers.models.cnn_decision_transformer.configuration_decision_transformer.DecisionTransformerConfig'>>
+from_pretrained ---> <bound method PretrainedConfig.from_pretrained of <class 'transformers.models.cnn_decision_transformer.configuration_decision_transformer.DecisionTransformerConfig'>>
+get_config_dict ---> <bound method PretrainedConfig.get_config_dict of <class 'transformers.models.cnn_decision_transformer.configuration_decision_transformer.DecisionTransformerConfig'>>
+register_for_auto_class ---> <bound method PretrainedConfig.register_for_auto_class of <class 'transformers.models.cnn_decision_transformer.configuration_decision_transformer.DecisionTransformerConfig'>>
